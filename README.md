@@ -20,12 +20,35 @@ Create `~/.config/omarchy-nzbget/config.json`:
 ```json
 {
   "url": "http://192.168.1.10:6789",
+  "public_url": "",
   "user": "nzbget-control-username",
   "password": "nzbget-control-password"
 }
 ```
 
 `chmod 600` it — those credentials can pause and reconfigure your downloader.
+
+| Key | Meaning |
+|-----|---------|
+| `url` | LAN address. Always tried first. |
+| `public_url` | Optional. Used only when the LAN address is unreachable, so the widget keeps working away from home. Leave `""` if NZBGet has no public address. |
+| `user` / `password` | NZBGet's ControlUsername / ControlPassword, sent as HTTP Basic auth. |
+
+### Away from home
+
+With `public_url` set, the LAN address is tried first and the public one only on
+failure. That order matters: at 3s polling this widget makes ~28,800 requests a
+day, and pointing that at a public edge with a rate limiter or an IP-ban daemon
+is a good way to get banned from your own server.
+
+The choice is remembered in `~/.local/state/omarchy-nzbget/endpoint.json`,
+because `backend.sh` runs as a fresh process on every poll and would otherwise
+pay a LAN timeout on every one while you are away. After a fallback it stays on
+the public endpoint for 10 minutes, then re-probes the LAN — so coming home
+restores the fast path on its own. The popup shows `remote` while on that path.
+
+Bad credentials are never failed over to the public endpoint. Retrying a wrong
+password against your own public edge is a good way to get banned by it.
 
 The username and password are NZBGet's **Settings → Security →
 ControlUsername / ControlPassword**, sent as HTTP Basic auth. NZBGet ships with
@@ -88,11 +111,11 @@ The bar icon is an SVG, needing `qt6-svg` — already a hard dependency of
 
 ```bash
 omarchy plugin remove ky.nzbget-queue
-rm -rf ~/.config/omarchy-nzbget
+rm -rf ~/.config/omarchy-nzbget ~/.local/state/omarchy-nzbget
 ```
 
-The plugin writes nothing outside its own config, which it only ever reads.
-There is no state directory and no cache.
+The plugin only ever writes `~/.local/state/omarchy-nzbget/endpoint.json`, which
+records which address last worked. It reads its config and never edits it.
 
 ## Debugging
 
@@ -104,6 +127,8 @@ There is no state directory and no cache.
 ./backend.sh resume
 ./backend.sh limit 5120      # KB/s; 0 = unlimited
 ```
+
+Delete `~/.local/state/omarchy-nzbget/endpoint.json` to force a LAN re-probe.
 
 Failures are distinct on purpose — `not configured`, `bad config`,
 `auth failed`, `unreachable`, `http <code>` — because a dead downloader and an

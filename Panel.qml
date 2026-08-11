@@ -95,6 +95,16 @@ Panel {
               font.pixelSize: Style.font.title
               font.bold: true
             }
+            // Worth stating rather than leaving a mystery: on the public path
+            // the widget is reaching NZBGet from outside the LAN.
+            Text {
+              visible: !!root.svc && root.svc.endpoint === "public"
+              text: "remote"
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+            }
+
             Text {
               visible: !!root.svc && root.svc.ok
               text: root.svc ? root.svc.freeDiskText + " free" : ""

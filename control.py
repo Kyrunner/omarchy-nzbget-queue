@@ -46,6 +46,8 @@ def main():
             nzbget.rpc(cfg, "resumedownload")
         else:
             nzbget.rpc(cfg, "rate", [kbps])
+    except nzbget.AuthError:
+        out(False, error="auth failed")
     except urllib.error.HTTPError as e:
         out(False, error="auth failed" if e.code in (401, 403) else "http %d" % e.code)
     except Exception:

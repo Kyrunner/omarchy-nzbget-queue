@@ -10,26 +10,60 @@ only be checked by eye on a machine that happens to be downloading something.
 import base64
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 
 CONFIG = os.environ.get("OMARCHY_NZBGET_CONFIG") or os.path.expanduser(
     "~/.config/omarchy-nzbget/config.json"
 )
+STATE_DIR = os.path.join(
+    os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
+    "omarchy-nzbget",
+)
+ENDPOINT_FILE = os.path.join(STATE_DIR, "endpoint.json")
+
+# Long enough that moving around the house does not thrash the choice, short
+# enough that coming home restores the LAN path without intervention.
+PUBLIC_STICKY_SEC = 600
+LAN_TIMEOUT = 2.5
+PUBLIC_TIMEOUT = 10
 
 
 class AuthError(Exception):
-    pass
+    """Bad credentials. Deliberately never triggers endpoint failover: retrying a
+    wrong password against a public edge is how you get banned by your own rate
+    limiter."""
 
 
 def load_config():
     with open(CONFIG) as f:
         cfg = json.load(f)
-    if not cfg.get("url"):
+    if not (cfg.get("url") or cfg.get("public_url")):
         raise ValueError("bad config")
     return cfg
 
 
-def rpc(cfg, method, params=None, timeout=8):
+def _load_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _save_json(path, data):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(data, f)
+        os.replace(tmp, path)
+    except Exception:
+        pass  # remembering the endpoint is an optimisation, never a requirement
+
+
+def _post(base, cfg, method, params, timeout):
     body = {"method": method}
     if params is not None:
         body["params"] = params
@@ -38,10 +72,58 @@ def rpc(cfg, method, params=None, timeout=8):
         cred = "%s:%s" % (cfg.get("user", ""), cfg.get("password", ""))
         headers["Authorization"] = "Basic " + base64.b64encode(cred.encode()).decode()
     req = urllib.request.Request(
-        cfg["url"].rstrip("/") + "/jsonrpc", data=json.dumps(body).encode(), headers=headers
+        base.rstrip("/") + "/jsonrpc", data=json.dumps(body).encode(), headers=headers
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read()).get("result")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read()).get("result")
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise AuthError("auth failed")
+        raise
+
+
+def rpc(cfg, method, params=None, timeout=None):
+    """Call NZBGet, preferring the LAN address and falling back to the public one.
+
+    The endpoint choice is persisted because these scripts run as a fresh process
+    per poll: with no memory, every poll away from home would pay the LAN timeout
+    before falling back.
+    """
+    lan, public = cfg.get("url"), cfg.get("public_url")
+    state = _load_json(ENDPOINT_FILE, {})
+    on_public = state.get("which") == "public"
+    fresh = (time.time() - float(state.get("since") or 0)) < PUBLIC_STICKY_SEC
+
+    if on_public and fresh and public:
+        order = [("public", public, timeout or PUBLIC_TIMEOUT)]
+    else:
+        order = ([("lan", lan, timeout or LAN_TIMEOUT)] if lan else []) + \
+                ([("public", public, timeout or PUBLIC_TIMEOUT)] if public else [])
+
+    last = None
+    for which, base, tmo in order:
+        try:
+            result = _post(base, cfg, method, params, tmo)
+            if which != state.get("which") or which == "public":
+                _save_json(ENDPOINT_FILE, {"which": which, "since": time.time()})
+            return result
+        except AuthError:
+            raise      # not an endpoint problem; do not hammer the public edge with it
+        except Exception as e:
+            last = e
+
+    # A sticky public choice can go stale (came home, wifi changed). One retry of
+    # the full order beats staying wedged on an endpoint that is gone.
+    if on_public and fresh and lan:
+        _save_json(ENDPOINT_FILE, {})
+        return rpc(cfg, method, params, timeout)
+
+    raise last or RuntimeError("no endpoint configured")
+
+
+def current_endpoint():
+    return _load_json(ENDPOINT_FILE, {}).get("which") or "lan"
 
 
 # ---- formatting -------------------------------------------------------------

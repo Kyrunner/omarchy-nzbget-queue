@@ -19,6 +19,7 @@ Item {
   property string remainingText: ""
   property string freeDiskText: ""
   property int limitKbps: 0
+  property string endpoint: ""
   property bool paused: false
   property int postJobs: 0
   property var items: []
@@ -55,6 +56,7 @@ Item {
             svc.remainingText = d.remaining_text || ""
             svc.freeDiskText = d.free_disk_text || ""
             svc.limitKbps = d.limit_kbps || 0
+            svc.endpoint = d.endpoint || ""
             svc.paused = !!d.paused
             svc.postJobs = d.post_jobs || 0
             svc.items = d.items || []

@@ -33,12 +33,18 @@ def main():
                 or int(status.get("PostJobCount") or 0) > 0
                 or int(status.get("UrlCount") or 0) > 0)
         groups = nzbget.rpc(cfg, "listgroups") if busy else []
+    except nzbget.AuthError:
+        die("auth failed")
     except urllib.error.HTTPError as e:
         die("auth failed" if e.code in (401, 403) else "http %d" % e.code)
     except Exception:
         die("unreachable")
 
-    print(json.dumps(nzbget.build(status, groups)))
+    out = nzbget.build(status, groups)
+    # Surfaced so the popup can say where it is talking: on the public path the
+    # poll is slower, and that is worth stating rather than leaving as a mystery.
+    out["endpoint"] = nzbget.current_endpoint()
+    print(json.dumps(out))
 
 
 if __name__ == "__main__":

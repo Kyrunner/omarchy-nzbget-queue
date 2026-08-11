@@ -121,14 +121,33 @@ or URLs pending, so an idle poll is a single small request.
 A fault keeps its width instead of collapsing, so "broken" and "idle" never look
 the same.
 
+## Two endpoints, and why the order matters
+
+`public_url` is optional and exists so the widget keeps working away from home.
+The LAN address is always tried first, and not merely because it is faster: at 3s
+polling this widget makes ~28,800 requests a day, and aiming that at a public
+edge running a rate limiter or an IP-ban daemon gets you banned from your own
+server.
+
+The choice is persisted to `~/.local/state/omarchy-nzbget/endpoint.json` because
+`backend.sh` is a fresh process per poll — with no memory, every poll away from
+home would pay the LAN timeout before falling back. After a fallback it sticks to
+the public endpoint for 10 minutes, then re-probes, so walking back in the front
+door restores the LAN path unaided. A sticky choice that has gone stale gets one
+full retry rather than staying wedged.
+
+`AuthError` deliberately never triggers failover. Bad credentials are not an
+endpoint problem, and retrying them against a public edge is how you get banned
+by your own defences.
+
 ## Credentials
 
 HTTP Basic against NZBGet's ControlUsername/ControlPassword. The config path is
 passed to the helpers through the environment rather than argv, so credentials
 never appear in `ps` for other users on the box.
 
-The plugin has no state directory and no cache: it reads its config and writes
-nothing.
+The only thing the plugin writes is `~/.local/state/omarchy-nzbget/endpoint.json`
+— which address last worked. It reads its config and never edits it.
 
 ## Testing status
 
