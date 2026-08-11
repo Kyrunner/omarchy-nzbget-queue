@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "ky.nzbget-queue",
+  "name": "NZBGet Queue",
+  "version": "0.1.0",
+  "author": "ky",
+  "license": "MIT",
+  "description": "Live NZBGet download speed in the bar, with the queue, pause/resume and a speed limit in the popup.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "NZBGet",
+    "description": "Shows the current NZBGet download rate in the bar and hides while nothing is downloading. The popup lists each item with progress, size and ETA, and offers pause/resume plus a speed limit.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 3,
+      "hideWhenIdle": true
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval while downloading (seconds)",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 3
+      },
+      {
+        "key": "hideWhenIdle",
+        "type": "boolean",
+        "label": "Hide from the bar when nothing is downloading",
+        "defaultValue": true
+      }
+    ]
+  }
+}
