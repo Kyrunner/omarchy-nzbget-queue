@@ -21,9 +21,12 @@ BarWidget {
   // A failing poll that has not yet faulted is undecided: at boot the bar starts
   // ~10s before the network is up, and a widget that appears, shows a mark and
   // then disappears is worse than one that arrives once. It hides ONLY while
-  // there is nothing to show -- which is the case at boot, and never once a
-  // queue is known, so a mid-session blip cannot make it vanish.
-  readonly property bool undecided: !nzb.ok && !nzb.faulted && nzb.count === 0
+  // there is nothing to show -- which is the case at boot, and never once
+  // there's something to show, so a mid-session blip cannot make it vanish.
+  // `count` is the queue length, not "nothing to display": a globally paused
+  // NZBGet with an empty queue still renders barText = "paused", so the guard
+  // has to key off barText, the same thing `idle` above tests.
+  readonly property bool undecided: !nzb.ok && !nzb.faulted && nzb.barText === ""
   readonly property bool hidden: (root.idle && root.hideWhenIdle) || root.undecided
 
   // The mark carries the identity, so text is only added when it says something

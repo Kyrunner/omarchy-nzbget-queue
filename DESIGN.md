@@ -104,7 +104,7 @@ as `paused` regardless of what the group still calls itself.
 |-----------|----------|
 | Something downloading | 3s — a rate readout needs that to feel live |
 | Queue empty | 15s — an idle server does not deserve a laptop wakeup every 3s |
-| Poll failing | 5s retry, until it has been failing for 45s |
+| Poll failing | 3s retry — capped at the steady interval, never slower, until it has been failing for 45s |
 | Failing past 45s | back to the steady interval — it is a fault now, not a retry |
 
 `listgroups` is only requested when `status` reports remaining bytes, post jobs
@@ -117,10 +117,12 @@ every boot fails. Rendering that is a lie with a red badge on it.
 
 `Readiness.qml` (logic in `Readiness.js`, tested with `node Readiness.test.js`)
 holds the rule, and it is uniform — there is no startup special case. **A failure
-is silent until it has lasted 45 seconds of continuous failing.** It retries every
-5s meanwhile, and one success anywhere in that window resets the clock. So a boot
-is quiet, a blip is quiet, and a genuinely dead downloader still speaks up within
-a minute.
+is silent until it has lasted 45 seconds of continuous failing.** While failing,
+`idle` is false, so the steady interval is `Math.max(2, 3) = 3`, and the
+component never retries slower than that — it retries every 3s meanwhile, not
+the component's default 5s, and one success anywhere in that window resets the
+clock. So a boot is quiet, a blip is quiet, and a genuinely dead downloader still
+speaks up within a minute.
 
 That 45s is real elapsed time, accumulated one poll at a time with each interval
 sanity-checked against the delay actually scheduled. It has to be:
@@ -137,7 +139,7 @@ scheduled interval, so it can neither manufacture a fault nor hide one.
 | Paused | mark dimmed + `paused` |
 | Post-processing | mark + `processing` |
 | Failing < 45s, nothing known yet | hidden — the boot case, before the first poll lands |
-| Failing < 45s, queue known | unchanged: last known rate, popup marks it last-known |
+| Failing < 45s, queue known | unchanged: last known rate, shown unmarked until the fault |
 | not configured / unreachable / auth failed for 45s | mark dimmed + red `!` |
 
 A fault keeps its width instead of collapsing, so "broken" and "idle" never look

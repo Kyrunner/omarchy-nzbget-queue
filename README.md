@@ -92,16 +92,18 @@ fact busy unpacking.
 
 3s while something is downloading, backing off to 15s when the queue is empty.
 A speed readout needs a few seconds to feel live, but an idle NZBGet does not
-deserve a wakeup every 3s on a laptop. A failing poll retries every 5s.
+deserve a wakeup every 3s on a laptop. A failing poll retries at 3s too — the
+component never backs off slower than the plugin's own steady interval.
 
 The queue itself is only fetched when `status` says there is one, so an idle
 poll is a single small request.
 
 A failure is silent until it has lasted 45 seconds. Inside that window the widget
-keeps showing the last known rate, marked as last-known; if it has nothing yet —
-the usual case at boot, since the bar starts before WiFi associates — it stays
-hidden rather than appearing just to say it is broken. Only 45s of *continuous*
-failure earns the red `!`, and one good poll clears it.
+keeps showing the last known rate, unmarked — nothing on the bar or in the popup
+flags it as stale yet; if it has nothing yet — the usual case at boot, since the
+bar starts before WiFi associates — it stays hidden rather than appearing just to
+say it is broken. Only 45s of *continuous* failure earns the red `!`, marks the
+popup last-known, and one good poll clears it.
 
 ## Dependencies
 
