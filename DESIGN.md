@@ -104,9 +104,29 @@ as `paused` regardless of what the group still calls itself.
 |-----------|----------|
 | Something downloading | 3s — a rate readout needs that to feel live |
 | Queue empty | 15s — an idle server does not deserve a laptop wakeup every 3s |
+| Poll failing | 5s retry, until it has been failing for 45s |
+| Failing past 45s | back to the steady interval — it is a fault now, not a retry |
 
 `listgroups` is only requested when `status` reports remaining bytes, post jobs
 or URLs pending, so an idle poll is a single small request.
+
+## The grace window
+
+The bar starts about ten seconds before WiFi associates, so the first poll of
+every boot fails. Rendering that is a lie with a red badge on it.
+
+`Readiness.qml` (logic in `Readiness.js`, tested with `node Readiness.test.js`)
+holds the rule, and it is uniform — there is no startup special case. **A failure
+is silent until it has lasted 45 seconds of continuous failing.** It retries every
+5s meanwhile, and one success anywhere in that window resets the clock. So a boot
+is quiet, a blip is quiet, and a genuinely dead downloader still speaks up within
+a minute.
+
+That 45s is real elapsed time, accumulated one poll at a time with each interval
+sanity-checked against the delay actually scheduled. It has to be:
+`systemd-timesyncd` makes its first correction inside this very window, and a
+suspend moves the clock by hours. A step in either direction is credited as one
+scheduled interval, so it can neither manufacture a fault nor hide one.
 
 ## Bar states
 
@@ -116,10 +136,14 @@ or URLs pending, so an idle poll is a single small request.
 | Downloading | mark + `↓ 12.4 MB/s` |
 | Paused | mark dimmed + `paused` |
 | Post-processing | mark + `processing` |
-| not configured / unreachable / auth failed | mark dimmed + red `!` |
+| Failing < 45s, nothing known yet | hidden — the boot case, before the first poll lands |
+| Failing < 45s, queue known | unchanged: last known rate, popup marks it last-known |
+| not configured / unreachable / auth failed for 45s | mark dimmed + red `!` |
 
 A fault keeps its width instead of collapsing, so "broken" and "idle" never look
-the same.
+the same. The undecided window is the one case that hides rather than keeping its
+width, and only when there is nothing to show — a widget that has a queue keeps
+showing it rather than blinking out of the bar mid-session.
 
 ## Two endpoints, and why the order matters
 

@@ -62,7 +62,7 @@ before exposing this or anything else to your network.
 | Bar | NZBGet mark with the current rate, e.g. `↓ 12.4 MB/s`. Hidden when idle. |
 | Bar, `paused` | Mark dimmed, with the word — you paused it, nothing is broken |
 | Bar, `processing` | Downloading finished; NZBGet is unpacking or repairing |
-| Bar, red `!` | Something is wrong; the popup names it |
+| Bar, red `!` | Something has been wrong for 45s straight; the popup names it |
 | Click | Show the queue |
 | ⏸ / ▶ | Pause or resume all downloading |
 | `off` `10` `5` `1 MB/s` | Speed limit presets |
@@ -92,10 +92,16 @@ fact busy unpacking.
 
 3s while something is downloading, backing off to 15s when the queue is empty.
 A speed readout needs a few seconds to feel live, but an idle NZBGet does not
-deserve a wakeup every 3s on a laptop.
+deserve a wakeup every 3s on a laptop. A failing poll retries every 5s.
 
 The queue itself is only fetched when `status` says there is one, so an idle
 poll is a single small request.
+
+A failure is silent until it has lasted 45 seconds. Inside that window the widget
+keeps showing the last known rate, marked as last-known; if it has nothing yet —
+the usual case at boot, since the bar starts before WiFi associates — it stays
+hidden rather than appearing just to say it is broken. Only 45s of *continuous*
+failure earns the red `!`, and one good poll clears it.
 
 ## Dependencies
 

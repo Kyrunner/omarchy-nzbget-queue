@@ -18,6 +18,14 @@ BarWidget {
                                        ? root.settings.hideWhenIdle : true
   readonly property bool idle: nzb.ok && nzb.barText === ""
 
+  // A failing poll that has not yet faulted is undecided: at boot the bar starts
+  // ~10s before the network is up, and a widget that appears, shows a mark and
+  // then disappears is worse than one that arrives once. It hides ONLY while
+  // there is nothing to show -- which is the case at boot, and never once a
+  // queue is known, so a mid-session blip cannot make it vanish.
+  readonly property bool undecided: !nzb.ok && !nzb.faulted && nzb.count === 0
+  readonly property bool hidden: (root.idle && root.hideWhenIdle) || root.undecided
+
   // The mark carries the identity, so text is only added when it says something
   // the icon cannot: a rate, a pause, or a fault. Idle needs no words.
   readonly property string label: {
@@ -60,10 +68,11 @@ BarWidget {
   }
 
   // Idle collapses to nothing — the honest way to say "no downloads" in a bar
-  // already carrying a dozen widgets. A FAULT keeps its width, so broken and
-  // idle never look the same.
-  visible: !(root.idle && root.hideWhenIdle)
-  implicitWidth: (root.idle && root.hideWhenIdle) ? 0 : row.implicitWidth + Style.space(14)
+  // already carrying a dozen widgets, and so does the undecided window before
+  // the first poll lands. A FAULT keeps its width, so broken and idle never
+  // look the same.
+  visible: !root.hidden
+  implicitWidth: root.hidden ? 0 : row.implicitWidth + Style.space(14)
   implicitHeight: root.barSize
 
   onBarChanged: injectPanel()
@@ -106,7 +115,7 @@ BarWidget {
       anchors.verticalCenter: parent.verticalCenter
       visible: root.label !== ""
       text: root.label
-      color: nzb.ok ? (nzb.paused ? Qt.darker(root.fg, 1.5) : root.fg) : root.urgent
+      color: nzb.faulted ? root.urgent : (nzb.paused ? Qt.darker(root.fg, 1.5) : root.fg)
       font.family: root.bar ? root.bar.fontFamily : Style.font.family
       font.pixelSize: Style.font.body
       renderType: Text.NativeRendering
