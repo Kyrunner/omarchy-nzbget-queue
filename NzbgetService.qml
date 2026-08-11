@@ -25,6 +25,13 @@ Item {
   property var items: []
   property bool stale: false
 
+  // True only once a failure has persisted past the grace window, or when the
+  // problem is a configuration one, which is never transient. Panels render
+  // errors from this, not from !ok, so a cold boot stays quiet.
+  readonly property bool faulted: readiness.faulted
+                                  || svc.error === "not configured"
+                                  || svc.error === "bad config"
+
   property string busyAction: ""
   property string actionError: ""
 
@@ -44,7 +51,7 @@ Item {
     stdout: StdioCollector {
       onStreamFinished: {
         var raw = this.text ? this.text.trim() : ""
-        if (raw === "") { svc.stale = svc.count > 0; svc.ok = false; svc.error = "no output"; return }
+        if (raw === "") { svc.stale = svc.count > 0; svc.ok = false; svc.error = "no output"; readiness.failed(); return }
         try {
           var d = JSON.parse(raw)
           svc.ok = !!d.ok
@@ -61,11 +68,14 @@ Item {
             svc.postJobs = d.post_jobs || 0
             svc.items = d.items || []
             svc.stale = false
+            readiness.succeeded()
           } else {
             svc.stale = svc.count > 0
+            readiness.failed()
           }
         } catch (e) {
           svc.ok = false; svc.error = "unparseable"; svc.stale = svc.count > 0
+          readiness.failed()
         }
       }
     }
@@ -100,14 +110,12 @@ Item {
   function resume() { run(["resume"], "resume") }
   function setLimit(kbps) { run(["limit", String(kbps)], "limit") }
 
-  Timer {
+  Readiness {
     // A speed readout needs a few seconds to feel live, but an idle NZBGet does
     // not deserve a wakeup every 3s on a laptop. Nothing in the queue means
     // nothing worth watching closely.
-    interval: (svc.idle ? 15 : Math.max(2, svc.refreshIntervalSec)) * 1000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: svc.refresh()
+    id: readiness
+    refreshIntervalSec: svc.idle ? 15 : Math.max(2, svc.refreshIntervalSec)
+    onPoll: svc.refresh()
   }
 }

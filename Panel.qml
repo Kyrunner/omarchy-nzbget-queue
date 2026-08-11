@@ -116,7 +116,7 @@ Panel {
 
           Text {
             Layout.fillWidth: true
-            visible: !!root.svc && !root.svc.ok
+            visible: !!root.svc && root.svc.faulted
             text: root.svc ? ("Not available — " + root.svc.error
                               + (root.svc.stale ? " (showing last known)" : "")) : ""
             color: root.urgent
@@ -126,7 +126,7 @@ Panel {
 
           Text {
             Layout.fillWidth: true
-            visible: !!root.svc && !root.svc.ok && root.svc.error === "not configured"
+            visible: !!root.svc && root.svc.faulted && root.svc.error === "not configured"
             text: "Create ~/.config/omarchy-nzbget/config.json with url, user and password."
             color: root.dim
             font.family: root.fontFamily

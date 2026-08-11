@@ -21,7 +21,7 @@ BarWidget {
   // The mark carries the identity, so text is only added when it says something
   // the icon cannot: a rate, a pause, or a fault. Idle needs no words.
   readonly property string label: {
-    if (!nzb.ok) return "!"
+    if (nzb.faulted) return "!"
     return nzb.barText
   }
 
@@ -98,7 +98,7 @@ BarWidget {
       smooth: true
       // Dimmed while paused or faulted: the mark should not look equally alive
       // whether or not anything is moving.
-      opacity: !nzb.ok ? 0.5 : (nzb.paused ? 0.55 : 1.0)
+      opacity: nzb.faulted ? 0.5 : (nzb.paused ? 0.55 : 1.0)
     }
 
     Text {
