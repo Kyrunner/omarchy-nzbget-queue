@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ky.nzbget-queue",
   "name": "NZBGet Queue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "ky",
   "license": "MIT",
   "description": "Live NZBGet download speed in the bar, with the queue, pause/resume and a speed limit in the popup.",
