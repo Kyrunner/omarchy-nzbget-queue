@@ -50,6 +50,13 @@ restores the fast path on its own. The popup shows `remote` while on that path.
 Bad credentials are never failed over to the public endpoint. Retrying a wrong
 password against your own public edge is a good way to get banned by it.
 
+Without a `public_url`, leaving the house makes NZBGet unreachable by
+definition, and a red `!` saying so tells you nothing you can act on. So that
+one case hides from the bar instead (setting **Hide from the bar when away from
+home**, on by default). It is deliberately narrow: NZBGet down while you are at
+home, or a configured public address that also fails, is a real fault and still
+shows as broken. Turn the setting off to see the fault in every case.
+
 The username and password are NZBGet's **Settings → Security →
 ControlUsername / ControlPassword**, sent as HTTP Basic auth. NZBGet ships with
 defaults (`nzbget` / `tegbzn6789`); if yours still accepts them, change them
@@ -62,7 +69,7 @@ before exposing this or anything else to your network.
 | Bar | NZBGet mark with the current rate, e.g. `↓ 12.4 MB/s`. Hidden when idle. |
 | Bar, `paused` | Mark dimmed, with the word — you paused it, nothing is broken |
 | Bar, `processing` | Downloading finished; NZBGet is unpacking or repairing |
-| Bar, red `!` | Something has been wrong for 45s straight; the popup names it |
+| Bar, red `!` | Something has been wrong for 45s straight; the popup names it. Off the home LAN with no `public_url`, the widget hides instead — see *Away from home*. |
 | Click | Show the queue |
 | ⏸ / ▶ | Pause or resume all downloading |
 | `off` `10` `5` `1 MB/s` | Speed limit presets |
@@ -137,6 +144,10 @@ records which address last worked. It reads its config and never edits it.
 ```
 
 Delete `~/.local/state/omarchy-nzbget/endpoint.json` to force a LAN re-probe.
+
+`bash poll-output.test.sh` checks what the poll reports when nothing answers,
+including the `has_public` flag the bar uses to tell "away from home" from
+"broken".
 
 Failures are distinct on purpose — `not configured`, `bad config`,
 `auth failed`, `unreachable`, `http <code>` — because a dead downloader and an

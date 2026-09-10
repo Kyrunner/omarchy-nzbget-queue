@@ -20,6 +20,7 @@ Item {
   property string freeDiskText: ""
   property int limitKbps: 0
   property string endpoint: ""
+  property bool hasPublic: false      // config offers a public address to fall back to
   property bool paused: false
   property int postJobs: 0
   property var items: []
@@ -37,6 +38,11 @@ Item {
 
   readonly property int count: items ? items.length : 0
   readonly property bool idle: ok && barText === ""
+  // Unreachable on a LAN-only config: the laptop has left the house and there
+  // is nothing to fall back to. Not a fault anyone can act on from here, which
+  // is why the bar may hide it. With a public address configured the same
+  // error IS a fault -- every address failed -- and stays visible.
+  readonly property bool away: faulted && error === "unreachable" && !hasPublic
   readonly property string summary: {
     if (!ok) return error
     if (idle) return "nothing downloading"
@@ -56,6 +62,7 @@ Item {
           var d = JSON.parse(raw)
           svc.ok = !!d.ok
           svc.error = d.error ? String(d.error) : ""
+          if (d.has_public !== undefined) svc.hasPublic = !!d.has_public
           if (d.ok) {
             svc.barText = d.bar_text || ""
             svc.rateText = d.rate_text || "0 B/s"

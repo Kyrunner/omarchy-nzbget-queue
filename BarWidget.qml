@@ -16,6 +16,8 @@ BarWidget {
 
   readonly property bool hideWhenIdle: (root.settings && root.settings.hideWhenIdle !== undefined)
                                        ? root.settings.hideWhenIdle : true
+  readonly property bool hideWhenAway: (root.settings && root.settings.hideWhenAway !== undefined)
+                                       ? root.settings.hideWhenAway : true
   readonly property bool idle: nzb.ok && nzb.barText === ""
 
   // A failing poll that has not yet faulted is undecided: at boot the bar starts
@@ -27,7 +29,12 @@ BarWidget {
   // NZBGet with an empty queue still renders barText = "paused", so the guard
   // has to key off barText, the same thing `idle` above tests.
   readonly property bool undecided: !nzb.ok && !nzb.faulted && nzb.barText === ""
-  readonly property bool hidden: (root.idle && root.hideWhenIdle) || root.undecided
+  // Away (LAN-only config, LAN unreachable) is the one fault that hides: a red
+  // mark saying "you are not at home" tells the reader nothing they can act on.
+  // Every other fault keeps its width, so broken and idle never look the same.
+  readonly property bool hidden: (root.idle && root.hideWhenIdle)
+                                 || (nzb.away && root.hideWhenAway)
+                                 || root.undecided
 
   // The mark carries the identity, so text is only added when it says something
   // the icon cannot: a rate, a pause, or a fault. Idle needs no words.

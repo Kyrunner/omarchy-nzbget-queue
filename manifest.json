@@ -6,8 +6,12 @@
   "author": "ky",
   "license": "MIT",
   "description": "Live NZBGet download speed in the bar, with the queue, pause/resume and a speed limit in the popup.",
-  "kinds": ["bar-widget"],
-  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
   "barWidget": {
     "displayName": "NZBGet",
     "description": "Shows the current NZBGet download rate in the bar and hides while nothing is downloading. The popup lists each item with progress, size and ETA, and offers pause/resume plus a speed limit.",
@@ -16,7 +20,8 @@
     "defaultSection": "right",
     "defaults": {
       "refreshIntervalSec": 3,
-      "hideWhenIdle": true
+      "hideWhenIdle": true,
+      "hideWhenAway": true
     },
     "schema": [
       {
@@ -32,6 +37,12 @@
         "key": "hideWhenIdle",
         "type": "boolean",
         "label": "Hide from the bar when nothing is downloading",
+        "defaultValue": true
+      },
+      {
+        "key": "hideWhenAway",
+        "type": "boolean",
+        "label": "Hide from the bar when away from home (LAN unreachable, no public address configured)",
         "defaultValue": true
       }
     ]
