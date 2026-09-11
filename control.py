@@ -48,6 +48,8 @@ def main():
             nzbget.rpc(cfg, "rate", [kbps])
     except nzbget.AuthError:
         out(False, error="auth failed")
+    except nzbget.EndpointRefused as e:
+        out(False, error=str(e))
     except urllib.error.HTTPError as e:
         out(False, error="auth failed" if e.code in (401, 403) else "http %d" % e.code)
     except Exception:

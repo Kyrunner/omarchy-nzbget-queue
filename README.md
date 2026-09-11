@@ -31,7 +31,7 @@ Create `~/.config/omarchy-nzbget/config.json`:
 | Key | Meaning |
 |-----|---------|
 | `url` | LAN address. Always tried first. |
-| `public_url` | Optional. Used only when the LAN address is unreachable, so the widget keeps working away from home. Leave `""` if NZBGet has no public address. |
+| `public_url` | Optional. Used only when the LAN address is unreachable, so the widget keeps working away from home. Must be `https://`: the credentials are never sent to a public address over plain HTTP, never follow a redirect, and replies over 4 MiB are refused. Leave `""` if NZBGet has no public address. |
 | `user` / `password` | NZBGet's ControlUsername / ControlPassword, sent as HTTP Basic auth. |
 
 ### Away from home
@@ -149,9 +149,14 @@ Delete `~/.local/state/omarchy-nzbget/endpoint.json` to force a LAN re-probe.
 including the `has_public` flag the bar uses to tell "away from home" from
 "broken".
 
+`bash endpoint-safety.test.sh` proves where the credentials may go: never to a
+plain-HTTP public address, never along a redirect, and never into a reply larger
+than 4 MiB. It runs the public path over real TLS against local stub servers.
+
 Failures are distinct on purpose — `not configured`, `bad config`,
-`auth failed`, `unreachable`, `http <code>` — because a dead downloader and an
-idle one must never look the same.
+`auth failed`, `unreachable`, `http <code>`, `public_url must be https`,
+`response too large` — because a dead downloader and an idle one must never
+look the same.
 
 ## Design
 

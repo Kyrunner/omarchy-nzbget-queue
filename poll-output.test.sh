@@ -31,8 +31,8 @@ run() { # name, expected-substring, config-json
 echo "unreachable, and whether a public address was there to try:"
 run "LAN only, dead"              '"has_public": false' "{\"url\":\"$DEAD\",\"user\":\"u\",\"password\":\"p\"}"
 run "LAN only, public_url empty"  '"has_public": false' "{\"url\":\"$DEAD\",\"public_url\":\"\",\"user\":\"u\",\"password\":\"p\"}"
-run "both dead"                   '"has_public": true'  "{\"url\":\"$DEAD\",\"public_url\":\"http://127.0.0.1:2\",\"user\":\"u\",\"password\":\"p\"}"
-run "both dead is still unreachable" '"error": "unreachable"' "{\"url\":\"$DEAD\",\"public_url\":\"http://127.0.0.1:2\",\"user\":\"u\",\"password\":\"p\"}"
+run "both dead"                   '"has_public": true'  "{\"url\":\"$DEAD\",\"public_url\":\"https://127.0.0.1:2\",\"user\":\"u\",\"password\":\"p\"}"
+run "both dead is still unreachable" '"error": "unreachable"' "{\"url\":\"$DEAD\",\"public_url\":\"https://127.0.0.1:2\",\"user\":\"u\",\"password\":\"p\"}"
 
 echo
 if [ "$fail" -eq 0 ]; then

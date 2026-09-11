@@ -44,6 +44,8 @@ def main():
         groups = nzbget.rpc(cfg, "listgroups") if busy else []
     except nzbget.AuthError:
         die("auth failed")
+    except nzbget.EndpointRefused as e:
+        die(str(e))
     except urllib.error.HTTPError as e:
         die("auth failed" if e.code in (401, 403) else "http %d" % e.code)
     except Exception:

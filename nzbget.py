@@ -12,6 +12,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 CONFIG = os.environ.get("OMARCHY_NZBGET_CONFIG") or os.path.expanduser(
@@ -29,11 +30,32 @@ PUBLIC_STICKY_SEC = 600
 LAN_TIMEOUT = 2.5
 PUBLIC_TIMEOUT = 10
 
+# A reply is read up to this many bytes and no further. `listgroups` for a long
+# queue is tens of KB; anything past this is not NZBGet answering us.
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+
 
 class AuthError(Exception):
     """Bad credentials. Deliberately never triggers endpoint failover: retrying a
     wrong password against a public edge is how you get banned by your own rate
     limiter."""
+
+
+class EndpointRefused(Exception):
+    """The endpoint is not one the credentials may be sent to, or its reply is not
+    one we will parse. The message is what the widget shows."""
+
+
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """urllib copies request headers onto a redirected request, so following a 3xx
+    would replay the Basic-auth header to wherever Location points. Returning None
+    makes the redirect surface as an HTTPError instead."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirects)
 
 
 def load_config():
@@ -63,7 +85,12 @@ def _save_json(path, data):
         pass  # remembering the endpoint is an optimisation, never a requirement
 
 
-def _post(base, cfg, method, params, timeout):
+def _post(which, base, cfg, method, params, timeout):
+    url = base.rstrip("/") + "/jsonrpc"
+    # The LAN address may be plain HTTP on a trusted network; the public one
+    # carries the credentials across the internet and must be HTTPS.
+    if which == "public" and urllib.parse.urlsplit(url).scheme != "https":
+        raise EndpointRefused("public_url must be https")
     body = {"method": method}
     if params is not None:
         body["params"] = params
@@ -71,12 +98,15 @@ def _post(base, cfg, method, params, timeout):
     if cfg.get("user") or cfg.get("password"):
         cred = "%s:%s" % (cfg.get("user", ""), cfg.get("password", ""))
         headers["Authorization"] = "Basic " + base64.b64encode(cred.encode()).decode()
-    req = urllib.request.Request(
-        base.rstrip("/") + "/jsonrpc", data=json.dumps(body).encode(), headers=headers
-    )
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read()).get("result")
+        with _OPENER.open(req, timeout=timeout) as r:
+            if r.geturl() != url:
+                raise EndpointRefused("redirected")
+            raw = r.read(MAX_RESPONSE_BYTES + 1)
+            if len(raw) > MAX_RESPONSE_BYTES:
+                raise EndpointRefused("response too large")
+            return json.loads(raw).get("result")
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             raise AuthError("auth failed")
@@ -104,7 +134,7 @@ def rpc(cfg, method, params=None, timeout=None):
     last = None
     for which, base, tmo in order:
         try:
-            result = _post(base, cfg, method, params, tmo)
+            result = _post(which, base, cfg, method, params, tmo)
             if which != state.get("which") or which == "public":
                 _save_json(ENDPOINT_FILE, {"which": which, "since": time.time()})
             return result
