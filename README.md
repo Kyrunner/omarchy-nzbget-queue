@@ -153,6 +153,11 @@ including the `has_public` flag the bar uses to tell "away from home" from
 plain-HTTP public address, never along a redirect, and never into a reply larger
 than 4 MiB. It runs the public path over real TLS against local stub servers.
 
+`bash state-write-safety.test.sh` proves what the state writes refuse to do: a
+symlink planted at the temp name is never followed, a symlinked state file is
+never read through, and a state directory other accounts can write is refused
+outright rather than written to.
+
 Failures are distinct on purpose — `not configured`, `bad config`,
 `auth failed`, `unreachable`, `http <code>`, `public_url must be https`,
 `response too large` — because a dead downloader and an idle one must never
