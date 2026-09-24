@@ -158,6 +158,10 @@ symlink planted at the temp name is never followed, a symlinked state file is
 never read through, and a state directory other accounts can write is refused
 outright rather than written to.
 
+`bash plain-text.test.sh` proves every Text element in every `.qml` file sets
+`textFormat: Text.PlainText`, so a download name or status from the server is
+always drawn as text and never interpreted as markup.
+
 Failures are distinct on purpose — `not configured`, `bad config`,
 `auth failed`, `unreachable`, `http <code>`, `public_url must be https`,
 `response too large` — because a dead downloader and an idle one must never

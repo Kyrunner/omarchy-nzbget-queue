@@ -88,6 +88,7 @@ Panel {
             }
 
             Text {
+              textFormat: Text.PlainText
               Layout.fillWidth: true
               text: "NZBGet"
               color: root.foreground
@@ -98,6 +99,7 @@ Panel {
             // Worth stating rather than leaving a mystery: on the public path
             // the widget is reaching NZBGet from outside the LAN.
             Text {
+              textFormat: Text.PlainText
               visible: !!root.svc && root.svc.endpoint === "public"
               text: "remote"
               color: root.dim
@@ -106,6 +108,7 @@ Panel {
             }
 
             Text {
+              textFormat: Text.PlainText
               visible: !!root.svc && root.svc.ok
               text: root.svc ? root.svc.freeDiskText + " free" : ""
               color: root.dim
@@ -115,6 +118,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: !!root.svc && root.svc.faulted
             text: root.svc ? ("Not available — " + root.svc.error
@@ -125,6 +129,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: !!root.svc && root.svc.faulted && root.svc.error === "not configured"
             text: "Create ~/.config/omarchy-nzbget/config.json with url, user and password."
@@ -136,6 +141,7 @@ Panel {
 
           // Overall line: rate, what is left, and when it will be done.
           Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: !!root.svc && root.svc.ok && root.svc.count > 0
             text: {
@@ -150,6 +156,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: !!root.svc && root.svc.ok && root.svc.count === 0
             text: "Nothing downloading."
@@ -158,6 +165,7 @@ Panel {
           }
 
           Text {
+            textFormat: Text.PlainText
             Layout.fillWidth: true
             visible: !!root.svc && root.svc.actionError !== ""
             text: root.svc ? ("Command failed — " + root.svc.actionError) : ""
@@ -175,6 +183,7 @@ Panel {
               spacing: Style.space(3)
 
               Text {
+                textFormat: Text.PlainText
                 Layout.fillWidth: true
                 text: modelData.name
                 color: root.foreground
@@ -199,6 +208,7 @@ Panel {
               }
 
               Text {
+                textFormat: Text.PlainText
                 Layout.fillWidth: true
                 text: {
                   var s = modelData.percent + "% · " + modelData.done_text + " / " + modelData.size_text
@@ -232,6 +242,7 @@ Panel {
             }
 
             Text {
+              textFormat: Text.PlainText
               text: (root.svc && root.svc.busyAction !== "") ? "working…" : ""
               color: root.dim
               font.family: root.fontFamily
@@ -241,6 +252,7 @@ Panel {
             Item { Layout.fillWidth: true }
 
             Text {
+              textFormat: Text.PlainText
               text: "limit"
               color: root.dim
               font.family: root.fontFamily
@@ -261,6 +273,7 @@ Panel {
 
                 Text {
                   id: presetText
+                  textFormat: Text.PlainText
                   anchors.centerIn: parent
                   text: modelData.label
                   color: parent.current ? root.background : root.dim

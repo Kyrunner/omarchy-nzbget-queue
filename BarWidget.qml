@@ -122,6 +122,7 @@ BarWidget {
 
     Text {
       id: labelText
+      textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
       visible: root.label !== ""
       text: root.label
